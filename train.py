@@ -6,7 +6,7 @@ from absl import logging
 import jax
 from jax import numpy as jnp
 import flax
-from flax import struct, linen as nn
+from flax import linen as nn
 import gin
 
 import dataloader
@@ -14,12 +14,10 @@ import utils
 
 
 @gin.configurable
-@struct.dataclass
-class Trainer:
+class Trainer(object):
     """Implements a JAX training loop."""
-    # the strcut contains all things class related, such as optimizer, loss, task, logger and model
     seed: int = 0
-    num_steps = gin.REQUIRED
+    num_steps: int = gin.REQUIRED
     model_definition: nn.Module = gin.REQUIRED
     create_dataset_fn: dataloader.CustomLoaderFn = gin.REQUIRED
     create_preprocess_fn: Any = gin.REQUIRED

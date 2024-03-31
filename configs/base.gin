@@ -3,6 +3,7 @@
 include "./size/medium.gin"     # medium size is used by default unless overridden via --gin_file
 
 NUM_STEPS = 100_000
+NUM_WARMUP_STEPS = 10_000
 DROPOUT = 0.1
 LEARNING_RATE = 5e-4
 
@@ -39,17 +40,17 @@ optimizers.WarmupCosineDecay:
     start_val = 1e-7
     min_lr = 1e-7
     num_steps = %NUM_STEPS
-    warmup_steps = %NUM_STEPS / 10
+    warmup_steps = %NUM_WARMUP_STEPS
 
 optimizers.create_specssm_optimizer:
     learning_rate = %LEARNING_RATE
     weight_decay = 0.1
-    m_y_learning_rate = %LEARNABLE_RATE / 10
+    m_y_learning_rate = 5e-5
     m_y_weight_decay = 0.0
 
 train.Trainer:
     num_steps = %NUM_STEPS
     model_definition = @seq_model.ClassificationModel
     create_optimizer_fn = @optimizers.create_specssm_optimizer
-    create_preprocessor_fn = @dataloader.create_lra_preprocess
+    create_preprocess_fn = @dataloader.create_lra_preprocess
     create_loss_fn = @losses.create_classification_loss

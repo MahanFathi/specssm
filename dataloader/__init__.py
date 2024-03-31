@@ -16,6 +16,7 @@ ReturnType = Tuple[DataLoader, DataLoader, DataLoader, Dict, int, int, int, int]
 dataset_fn = Callable[[str, Optional[int], Optional[int]], ReturnType]
 
 
+@gin.register
 def create_lra_preprocess(input_len: int, in_dim: int) -> Callable:
 	"""
 		:param input_len:     (int) length of sequence.

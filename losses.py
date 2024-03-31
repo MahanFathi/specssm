@@ -2,6 +2,9 @@ import jax
 import jax.numpy as jnp
 import optax
 
+import gin
+
+@gin.register
 def create_classification_loss():
     """Creates a loss function for classification tasks, that operates on batches."""
 
