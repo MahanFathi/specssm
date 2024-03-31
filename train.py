@@ -14,15 +14,26 @@ import utils
 
 
 @gin.configurable
-class Trainer(object):
+class Trainer:
     """Implements a JAX training loop."""
-    seed: int = 0
-    num_steps: int = gin.REQUIRED
-    model_definition: nn.Module = gin.REQUIRED
-    create_dataset_fn: dataloader.CustomLoaderFn = gin.REQUIRED
-    create_preprocess_fn: Any = gin.REQUIRED
-    create_optimizer_fn: Any = gin.REQUIRED
-    create_loss_fn: Any = gin.REQUIRED
+
+    def __init__(
+            self, 
+            seed: int = 0, 
+            num_steps: int = gin.REQUIRED, 
+            model_definition: nn.Module = gin.REQUIRED,
+            create_dataset_fn: dataloader.CustomLoaderFn = gin.REQUIRED, 
+            create_preprocess_fn: Any = gin.REQUIRED,
+            create_optimizer_fn: Any = gin.REQUIRED, 
+            create_loss_fn: Any = gin.REQUIRED
+    ):
+        self.seed = seed
+        self.num_steps = num_steps
+        self.model_definition = model_definition
+        self.create_dataset_fn = create_dataset_fn
+        self.create_preprocess_fn = create_preprocess_fn
+        self.create_optimizer_fn = create_optimizer_fn
+        self.create_loss_fn = create_loss_fn
 
 
     def create_training_state(self, key, dummy_inputs):

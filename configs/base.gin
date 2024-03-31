@@ -51,6 +51,6 @@ optimizers.create_specssm_optimizer:
 train.Trainer:
     num_steps = %NUM_STEPS
     model_definition = @seq_model.ClassificationModel
-    create_optimizer_fn = @optimizers.create_specssm_optimizer
     create_preprocess_fn = @dataloader.create_lra_preprocess
+    create_optimizer_fn = @optimizers.create_specssm_optimizer
     create_loss_fn = @losses.create_classification_loss
