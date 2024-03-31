@@ -1,0 +1,15 @@
+import train
+import dataloader
+
+from archs import seq_model
+
+TASK_NAME = 'listops'
+
+train.Trainer:
+    create_dataset_fn = @dataloader.create_lra_imdb_classification_dataset
+
+dataloader.create_lra_imdb_classification_dataset:
+    bsz = 64
+
+seq_model.ClassificationModel:
+    padded = True

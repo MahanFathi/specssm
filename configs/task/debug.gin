@@ -1,0 +1,4 @@
+TASK_NAME = 'argmax'
+DATASET_PATH = None
+INPUT_LEN = 100
+D_TARGET = 10

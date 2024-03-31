@@ -1,0 +1,8 @@
+D_MODEL = 8
+NUM_LAYERS = 2
+
+# Spectral SSM specific
+NUM_EIGH = 8
+AUTO_REG_K_U = 3
+AUTO_REG_K_Y = 2
+LEARNABLE_M_Y = True
