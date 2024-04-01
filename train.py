@@ -54,7 +54,8 @@ class Trainer:
         # init_rngs = utils.broadcast_to_local_devices(init_rngs)
         # dummy_inputs = utils.broadcast_to_local_devices(dummy_inputs)
         params = model.init(init_rngs, dummy_inputs)
-        param_sizes = utils.map_nested_fn(lambda k, param: param.size)(params)
+        fn_is_complex = lambda x: x.dtype in [jnp.complex64, jnp.complex128]
+        param_sizes = utils.map_nested_fn(lambda k, param: param.size * (2 if fn_is_complex(param) else 1))(params)
         logging.info(f"[*] Trainable Parameters: {sum(jax.tree_leaves(param_sizes))}")
         training_sate = train_state.TrainState.create(
             apply_fn=model.apply,
