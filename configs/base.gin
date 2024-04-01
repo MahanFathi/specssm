@@ -2,8 +2,8 @@
 
 include "./size/medium.gin"     # medium size is used by default unless overridden via --gin_file
 
-NUM_STEPS = 100_000
-NUM_WARMUP_STEPS = 10_000
+NUM_STEPS = 1_000_000
+NUM_WARMUP_STEPS = 20_000
 DROPOUT = 0.1
 LEARNING_RATE = 5e-4
 

@@ -38,10 +38,12 @@ class Trainer:
         self.create_optimizer_fn = create_optimizer_fn
         self.create_loss_fn = create_loss_fn
         
+        config_dict = gin.config_str().split('\n')
+        config_dict = {line.split(' ')[0]: line.split(' ')[-1] for line in config_dict if line}
         if use_wandb:
-            wandb.init(project="LRA SSM", job_type='model_training', config=gin.config_str())
+            wandb.init(project="LRA SSM", job_type='model_training', config=config_dict)
         else:
-            wandb.init(mode='offline')
+            wandb.init(mode='offline', config=config_dict)
 
 
     def create_training_state(self, key, dummy_inputs):
@@ -52,6 +54,8 @@ class Trainer:
         # init_rngs = utils.broadcast_to_local_devices(init_rngs)
         # dummy_inputs = utils.broadcast_to_local_devices(dummy_inputs)
         params = model.init(init_rngs, dummy_inputs)
+        param_sizes = utils.map_nested_fn(lambda k, param: param.size)(params)
+        logging.info(f"[*] Trainable Parameters: {sum(jax.tree_leaves(param_sizes))}")
         training_sate = train_state.TrainState.create(
             apply_fn=model.apply,
             params=params['params'],
