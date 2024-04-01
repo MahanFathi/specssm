@@ -6,3 +6,6 @@ NUM_EIGH = 8
 AUTO_REG_K_U = 3
 AUTO_REG_K_Y = 2
 LEARNABLE_M_Y = True
+
+# tiny batch size
+BATCH_SIZE = 2

@@ -63,7 +63,7 @@ class Trainer:
                 self.training_state = self.create_training_state(key=key_init, dummy_inputs=inputs)
             
             key, key_step = jax.random.split(key)
-            key_step = utils.broadcast_to_local_devices(key_step)
+            key_step = jax_utils.replicate(key_step)
             inputs, targets = jax.tree_util.tree_map(
                 lambda x: jnp.reshape(x, (self.num_local_devices, -1) + x.shape[1:]), (inputs, targets))
             self.training_state, metrics = self.train_step(key_step, self.training_state, inputs, targets)
@@ -76,13 +76,14 @@ class Trainer:
     @functools.partial(jax.pmap, axis_name='batch', static_broadcasted_argnums=(0,))
     def train_step(self, key, training_state, inputs, targets):
         key, key_dropout = jax.random.split(key)
+        pred_fn = lambda params: training_state.apply_fn(
+            {"params": training_state.params}, 
+            inputs, 
+            rngs={"dropout": key_dropout}, 
+            mutable=["intermediates"])[0]
         (loss, metrics), grads = jax.value_and_grad(
-            lambda params: self.loss_fn(
-                training_state.apply_fn(inputs, params=params, dropout_rngs=key_dropout), 
-                targets
-            ),
-            has_aux=True,
-        )(training_state.params)
+            lambda params: self.loss_fn(pred_fn(params), targets), 
+            has_aux=True)(training_state.params)
         metrics = jax.lax.pmean(metrics, axis_name='batch') # average metrics across the batch
         grads = jax.lax.pmean(grads, axis_name='batch')
         training_state = training_state.apply_gradients(grads=grads)
@@ -94,7 +95,7 @@ class Trainer:
         eval_model = self.batched_model_definition(training=False)
         @jax.pmap
         def eval_fn(params, inputs, targets):
-            return jax.lax.pmean(self.loss_fn(eval_model.apply(inputs, params=params), targets))
+            return jax.lax.pmean(self.loss_fn(eval_model.apply({"params": params}, inputs), targets))
         for batch in self.testloader:
             inputs, targets = self.preprocess_fn(batch)
             loss, metrics = eval_fn(self.training_state.params, inputs, targets)
@@ -131,8 +132,6 @@ class Trainer:
             variable_axes={"params": None, "dropout": None, 'batch_stats': None, "cache": 0, "prime": None},
             split_rngs={"params": False, "dropout": True}, axis_name='batch',
         )
-
-        # model = batched_model_definition(training=True)
 
         # PRNG key initialization
         key = jax.random.PRNGKey(self.seed)

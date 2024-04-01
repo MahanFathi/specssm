@@ -4,12 +4,13 @@ import dataloader
 from archs import seq_model
 
 TASK_NAME = 'listops'
+BATCH_SIZE = 64
 
 train.Trainer:
     create_dataset_fn = @dataloader.create_lra_listops_classification_dataset
 
 dataloader.create_lra_listops_classification_dataset:
-    bsz = 64
+    bsz = %BATCH_SIZE
 
 seq_model.ClassificationModel:
     padded = True
