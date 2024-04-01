@@ -5,8 +5,8 @@ from typing import Any
 from absl import logging
 import jax
 from jax import numpy as jnp
-import flax
-from flax import linen as nn
+from flax.training import train_state
+from flax import linen as nn, jax_utils
 import gin
 
 import dataloader
@@ -38,18 +38,18 @@ class Trainer:
 
     def create_training_state(self, key, dummy_inputs):
         model = self.batched_model_definition(training=True)
-        p_init = jax.pmap(model.init, axis_name='i')
         key, key_params, key_dropout = jax.random.split(key, 3)
         init_rngs = {"params": key_params, "dropout": key_dropout}
-        init_rngs = utils.broadcast_to_local_devices(init_rngs)
-        if isinstance(dummy_inputs, tuple):
-            dummy_inputs = dummy_inputs[0]
-        params = p_init(init_rngs, dummy_inputs)
-        return flax.training.train_state.TrainState.create(
+        # p_init = jax.pmap(model.init, axis_name='i')
+        # init_rngs = utils.broadcast_to_local_devices(init_rngs)
+        # dummy_inputs = utils.broadcast_to_local_devices(dummy_inputs)
+        params = model.init(init_rngs, dummy_inputs)
+        training_sate = train_state.TrainState.create(
             apply_fn=model.apply,
             params=params['params'],
             tx=self.optimizer,
         )
+        return jax_utils.replicate(training_sate)
 
 
     def train_epoch(self, key):
@@ -60,10 +60,12 @@ class Trainer:
             # create training state if nonexistent
             if self.training_state is None:
                 key, key_init = jax.random.split(key)
-                self.training_state = self._create_training_state(key=key_init, dummy_inputs=inputs)
+                self.training_state = self.create_training_state(key=key_init, dummy_inputs=inputs)
             
             key, key_step = jax.random.split(key)
             key_step = utils.broadcast_to_local_devices(key_step)
+            inputs, targets = jax.tree_util.tree_map(
+                lambda x: jnp.reshape(x, (self.num_local_devices, -1) + x.shape[1:]), (inputs, targets))
             self.training_state, metrics = self.train_step(key_step, self.training_state, inputs, targets)
             train_metrics.append(metrics)
         train_metrics = jax.tree_util.tree_map(lambda *x: jnp.stack(x).mean(), *train_metrics)
@@ -103,6 +105,7 @@ class Trainer:
 
     def train(self):
 
+        self.num_local_devices = jax.local_device_count()
         logging.info("JAX process: %d / %d", jax.process_index(), jax.process_count())
         logging.info("JAX local devices: %r", jax.local_devices())
 
