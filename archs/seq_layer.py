@@ -24,7 +24,7 @@ class SequenceLayer(nn.Module):
     training: bool = True
     ssm: nn.Module = gin.REQUIRED
     dropout: float = 0.1
-    activation: str = "gelu"
+    activation: str = "half_glu1"
     prenorm: bool = False
     # batchnorm: bool = False
     # bn_momentum: float = 0.90
