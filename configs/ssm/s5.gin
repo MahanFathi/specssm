@@ -1,0 +1,29 @@
+
+from archs.s5 import ssm
+from archs import seq_layer
+import optimizers
+
+
+LEARNING_RATE = 5e-4
+NUM_WARMUP_STEPS = 20_000
+
+
+seq_layer.SequenceLayer:
+    ssm = @ssm.S5
+
+
+ssm.s5:
+    d_model = %D_MODEL
+    ssm_size_base = 256
+    num_blocks = 8
+
+
+optimizers.create_specssm_optimizer:
+    learning_rate = %LEARNING_RATE
+    weight_decay = 0.1
+    m_y_learning_rate = 5e-5
+    m_y_weight_decay = 0.0
+
+
+train.Trainer:
+    create_optimizer_fn = @optimizers.create_specssm_optimizer

@@ -1,0 +1,39 @@
+
+from archs.spectral_ssm import ssm
+from archs import seq_layer
+import optimizers
+
+LEARNING_RATE = 5e-4
+NUM_WARMUP_STEPS = 20_000
+
+# Spectral SSM specific
+NUM_EIGH = 24
+AUTO_REG_K_U = 3
+AUTO_REG_K_Y = 2
+LEARNABLE_M_Y = True
+
+seq_layer.SequenceLayer:
+    ssm = @ssm.STU
+
+ssm.STU:
+    d_model = %D_MODEL
+    num_eigh = %NUM_EIGH
+    auto_reg_k_u = %AUTO_REG_K_U
+    auto_reg_k_y = %AUTO_REG_K_Y
+    learnable_m_y = %LEARNABLE_M_Y
+
+
+optimizers.WarmupCosineDecay:
+    start_val = 1e-7
+    min_lr = 1e-7
+    num_steps = %NUM_STEPS
+    warmup_steps = %NUM_WARMUP_STEPS
+
+optimizers.create_specssm_optimizer:
+    learning_rate = %LEARNING_RATE
+    weight_decay = 0.1
+    m_y_learning_rate = 5e-5
+    m_y_weight_decay = 0.0
+
+train.Trainer:
+    create_optimizer_fn = @optimizers.create_specssm_optimizer
