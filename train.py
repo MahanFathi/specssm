@@ -8,6 +8,7 @@ from jax import numpy as jnp
 from flax.training import train_state
 from flax import linen as nn, jax_utils
 import gin
+from tqdm import tqdm
 
 import dataloader
 import utils
@@ -47,14 +48,13 @@ class Trainer:
         training_sate = train_state.TrainState.create(
             apply_fn=model.apply,
             params=params['params'],
-            tx=self.optimizer,
-        )
+            tx=self.optimizer)
         return jax_utils.replicate(training_sate)
 
 
     def train_epoch(self, key):
         train_metrics = []
-        for batch in self.trainloader:
+        for batch in tqdm(self.trainloader):
             # preprocess the data
             inputs, targets = self.preprocess_fn(batch)
             # create training state if nonexistent
@@ -90,14 +90,17 @@ class Trainer:
         return training_state, metrics
 
 
-    def evaluate_epoch(self):
+    def evaluate_epoch(self, key):
+        del key
         eval_metrics = []
         eval_model = self.batched_model_definition(training=False)
-        @jax.pmap
+        @functools.partial(jax.pmap, axis_name="batch")
         def eval_fn(params, inputs, targets):
-            return jax.lax.pmean(self.loss_fn(eval_model.apply({"params": params}, inputs), targets))
-        for batch in self.testloader:
+            return jax.lax.pmean(self.loss_fn(eval_model.apply({"params": params}, inputs), targets), axis_name="batch")
+        for batch in tqdm(self.testloader):
             inputs, targets = self.preprocess_fn(batch)
+            inputs, targets = jax.tree_util.tree_map(
+                lambda x: jnp.reshape(x, (self.num_local_devices, -1) + x.shape[1:]), (inputs, targets))
             loss, metrics = eval_fn(self.training_state.params, inputs, targets)
             eval_metrics.append(metrics)
         eval_metrics = jax.tree_util.tree_map(lambda *x: jnp.stack(x).mean(), *eval_metrics)
@@ -138,6 +141,8 @@ class Trainer:
 
         # get number of epochs
         num_epochs = self.num_steps // train_size + 1
+
+        logging.info("STARTED TRAINING FOR %r EPOCHS.", num_epochs)
 
         self.training_state = None
         for epoch_num in range(num_epochs):
