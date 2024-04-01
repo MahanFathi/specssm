@@ -14,6 +14,7 @@ def create_classification_loss():
         loss = jnp.sum(optax.softmax_cross_entropy(model_outputs, one_hot_targets))
         metrics = {
             'loss': loss,
+            'accuracy': jnp.mean(jnp.argmax(model_outputs, axis=-1) == targets)
         }
         return loss, metrics
     

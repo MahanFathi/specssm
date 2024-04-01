@@ -8,6 +8,7 @@ from jax import numpy as jnp
 from flax.training import train_state
 from flax import linen as nn, jax_utils
 import gin
+import wandb
 
 import dataloader
 import utils
@@ -25,7 +26,8 @@ class Trainer:
             create_dataset_fn: dataloader.CustomLoaderFn = gin.REQUIRED, 
             create_preprocess_fn: Any = gin.REQUIRED,
             create_optimizer_fn: Any = gin.REQUIRED, 
-            create_loss_fn: Any = gin.REQUIRED
+            create_loss_fn: Any = gin.REQUIRED,
+            use_wandb: bool = True,
     ):
         self.seed = seed
         self.num_steps = num_steps
@@ -34,6 +36,11 @@ class Trainer:
         self.create_preprocess_fn = create_preprocess_fn
         self.create_optimizer_fn = create_optimizer_fn
         self.create_loss_fn = create_loss_fn
+        
+        if use_wandb:
+            wandb.init(project="LRA SSM", job_type='model_training', config=gin.config_str())
+        else:
+            wandb.init(mode='offline')
 
 
     def create_training_state(self, key, dummy_inputs):
@@ -71,6 +78,7 @@ class Trainer:
         train_metrics = jax.tree_util.tree_map(lambda *x: jnp.stack(x).mean(), *train_metrics)
         # TODO(mahanfathi): log metrics properly
         logging.info("Training Metrics: %r", train_metrics)
+        wandb.log({"training/"+key: val for key, val in train_metrics.items()})
     
 
     @functools.partial(jax.pmap, axis_name='batch', static_broadcasted_argnums=(0,))
@@ -102,9 +110,11 @@ class Trainer:
             eval_metrics.append(metrics)
         eval_metrics = jax.tree_util.tree_map(lambda *x: jnp.stack(x).mean(), *eval_metrics)
         logging.info("Evaluation Metrics: %r", eval_metrics)
+        wandb.log({"eval/"+key: val for key, val in eval_metrics.items()})
 
 
     def train(self):
+        """Train the model."""
 
         self.num_local_devices = jax.local_device_count()
         logging.info("JAX process: %d / %d", jax.process_index(), jax.process_count())
