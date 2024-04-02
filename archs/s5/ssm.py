@@ -221,7 +221,7 @@ class S5(nn.Module):
 
             else:
                 self.C = self.param("C",
-                                    lambda rng, shape: init_CV(C_init, rng, shape, self.V),
+                                    lambda rng, shape: init_CV(C_init, rng, shape, V),
                                     C_shape)
 
                 self.C_tilde = self.C[..., 0] + 1j * self.C[..., 1]

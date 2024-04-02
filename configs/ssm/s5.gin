@@ -22,8 +22,6 @@ optimizers.create_s5_optimizer:
     learning_rate = %LEARNING_RATE
     ssm_learning_rate = %LEARNING_RATE
     opt_config = "standard"
-    m_y_learning_rate = 5e-5
-    m_y_weight_decay = 0.0
 
 
 train.Trainer:
