@@ -209,10 +209,10 @@ class S5(nn.Module):
         else:
             if self.bidirectional:
                 self.C1 = self.param("C1",
-                                     lambda rng, shape: init_CV(C_init, rng, shape, self.V),
+                                     lambda rng, shape: init_CV(C_init, rng, shape, V),
                                      C_shape)
                 self.C2 = self.param("C2",
-                                     lambda rng, shape: init_CV(C_init, rng, shape, self.V),
+                                     lambda rng, shape: init_CV(C_init, rng, shape, V),
                                      C_shape)
 
                 C1 = self.C1[..., 0] + 1j * self.C1[..., 1]
