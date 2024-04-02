@@ -91,7 +91,7 @@ def apply_ssm(Lambda_bar, B_bar, C_tilde, input_sequence, conj_sym, bidirectiona
 
 
 @gin.configurable
-class S5SSM(nn.Module):
+class S5(nn.Module):
 
     input_len: int = None
     d_model: int = gin.REQUIRED
