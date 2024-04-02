@@ -90,7 +90,7 @@ class Trainer:
     def train_step(self, key, training_state, inputs, targets):
         key, key_dropout = jax.random.split(key)
         pred_fn = lambda params: training_state.apply_fn(
-            {"params": training_state.params}, 
+            {"params": params}, 
             inputs, 
             rngs={"dropout": key_dropout}, 
             mutable=["intermediates"])[0]
