@@ -5,8 +5,8 @@ import optimizers
 
 
 NUM_STEPS = 300_000
-LEARNING_RATE = 5e-4
 NUM_WARMUP_STEPS = 20_000
+LEARNING_RATE = 5e-4
 
 
 seq_layer.SequenceLayer:
@@ -15,7 +15,7 @@ seq_layer.SequenceLayer:
 
 ssm.S5:
     d_model = %D_MODEL
-    ssm_size_base = 256
+    ssm_size_base = 16
     num_blocks = 8
 
 

@@ -1,6 +1,8 @@
 import train
 import dataloader
 
+import archs.s5.ssm
+from archs import seq_layer
 from archs import seq_model
 
 TASK_NAME = 'listops'
@@ -8,6 +10,15 @@ BATCH_SIZE = 64
 
 NUM_STEPS = 3_000_000
 NUM_WARMUP_STEPS = 50_000
+
+# ---------- S5 Specific ---------
+archs.s5.ssm.S5:
+    C_init = "lecun_normal"
+    bidirectional = True
+# --------------------------------
+
+seq_layer.SequenceLayer:
+    activation = 'half_glu2'
 
 train.Trainer:
     create_dataset_fn = @dataloader.create_lra_listops_classification_dataset
@@ -17,3 +28,4 @@ dataloader.create_lra_listops_classification_dataset:
 
 seq_model.ClassificationModel:
     padded = True
+
