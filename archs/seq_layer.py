@@ -1,4 +1,5 @@
 import jax
+from jax import numpy as jnp
 from flax import linen as nn
 import gin
 
@@ -26,6 +27,7 @@ class SequenceLayer(nn.Module):
     dropout: float = 0.1
     activation: str = "half_glu1"
     prenorm: bool = False
+    positional_embedding: str | None = None
     # batchnorm: bool = False
     # bn_momentum: float = 0.90
 
@@ -55,6 +57,14 @@ class SequenceLayer(nn.Module):
             deterministic=not self.training,
         )
 
+        if self.positional_embedding in ["independent"]:
+            self.pos_emb = nn.Embed(
+                num_embeddings=self.input_len,
+                features=self.d_model,
+            )
+        elif self.positional_embedding in ["sinusoidal"]:
+            raise NotImplementedError("Sinusoidal positional embedding not implemented")
+
     def __call__(self, x):
         """
         Compute the LxH output of S5 layer given an LxH input.
@@ -64,6 +74,8 @@ class SequenceLayer(nn.Module):
             output sequence (float32): (L, d_model)
         """
         skip = x
+        if self.positional_embedding:
+            x += self.pos_emb(jnp.arange(self.input_len))
         if self.prenorm:
             x = self.norm(x)
         x = self.seq(x)

@@ -106,6 +106,7 @@ class S5(nn.Module):
     step_rescale: float = 1.0
     discretization: str = "zoh"
     C_init: str = "trunc_standard_normal"
+    real_only: bool = False
 
     """ The S5 SSM
         Args:
@@ -128,6 +129,7 @@ class S5(nn.Module):
                                         on a different resolution for the speech commands benchmark
             C_init          (string):   Specifies how C is initialized, 
                                         options: [trunc_standard_normal, lecun_normal, complex_normal]
+            real_only       (bool):     Whether to use real valued matrices for Lambda, B and C
     """
 
     def setup(self):
@@ -234,6 +236,13 @@ class S5(nn.Module):
                                    init_log_steps,
                                    (self.P, self.dt_min, self.dt_max))
         step = self.step_rescale * jnp.exp(self.log_step[:, 0])
+
+        if self.real_only:
+            """Make sure all ssm parameters are real valued"""
+            # TODO(mahanfathi): there's a cleaner way to do this
+            self.Lambda = self.Lambda.real
+            B_tilde = B_tilde.real
+            self.C_tilde = self.C_tilde.real
 
         # Discretize
         if self.discretization in ["zoh"]:
