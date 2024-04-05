@@ -106,6 +106,8 @@ def create_specssm_optimizer(
 
 @gin.configurable
 def create_s5_optimizer(
+    num_steps: int,
+    num_warmup_steps: int,
     learning_rate: optax.ScalarOrSchedule = 5e-4,
     weight_decay: float = 0.1,
     ssm_learning_rate: optax.ScalarOrSchedule = 5e-4,
@@ -225,5 +227,23 @@ def create_s5_optimizer(
             },
             ssm_fn,
         )
+
+        # tx is the base optimizer, we now proceed to add the learning rate schedule
+        schedule = optax.join_schedules(
+            schedules=[
+              optax.linear_schedule(.1, 1., num_warmup_steps),
+              optax.cosine_decay_schedule(1., num_steps - num_warmup_steps)
+            ],
+            boundaries=[
+              num_warmup_steps,
+            ]
+        )
+
+        tx = optax.chain(
+          tx,
+          # optax.scale_by_schedule(schedule),
+          optax.scale_by_learning_rate(learning_rate=schedule, flip_sign=False),
+        )
+
 
     return tx

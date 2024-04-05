@@ -4,6 +4,7 @@ from archs import seq_layer
 import optimizers
 
 
+NUM_STEPS = 300_000
 LEARNING_RATE = 5e-4
 NUM_WARMUP_STEPS = 20_000
 
@@ -19,6 +20,8 @@ ssm.S5:
 
 
 optimizers.create_s5_optimizer:
+    num_steps = %NUM_STEPS
+    num_warmup_steps = %NUM_WARMUP_STEPS
     learning_rate = %LEARNING_RATE
     ssm_learning_rate = %LEARNING_RATE
     opt_config = "standard"

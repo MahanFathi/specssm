@@ -2,7 +2,7 @@
 
 include "./size/medium.gin"     # medium size is used by default unless overridden via --gin_file
 
-NUM_STEPS = 1_000_000
+NUM_STEPS = 1_000_000   # might be overridden depending on the model/dataset
 DROPOUT = 0.1
 
 import train
