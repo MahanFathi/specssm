@@ -119,7 +119,8 @@ class Trainer:
         metrics = jax.lax.pmean(metrics, axis_name='batch') # average metrics across the batch
         grads = jax.lax.pmean(grads, axis_name='batch')
         if hasattr(training_state, "batch_stats"):
-            training_state = training_state.replace(batch_stats=mutes["batch_stats"])
+            new_batch_stats = jax.lax.pmean(mutes["batch_stats"], axis_name='batch')
+            training_state = training_state.replace(batch_stats=new_batch_stats)
         training_state = training_state.apply_gradients(grads=grads)
         return training_state, metrics
 
@@ -129,17 +130,18 @@ class Trainer:
         eval_metrics = []
         eval_model = self.batched_model_definition(training=False)
         bs_dict = {}
-        if hasattr(self.training_state, "batch_stats"):
-            bs_dict = {"batch_stats": self.training_state.batch_stats}
         @functools.partial(jax.pmap, axis_name="batch")
-        def eval_fn(params, inputs, targets):
-            preds = eval_model.apply({**{"params": params}, **bs_dict}, inputs)
+        def eval_fn(training_state, inputs, targets):
+            bs_dict = {}
+            if hasattr(self.training_state, "batch_stats"):
+                bs_dict = {"batch_stats": self.training_state.batch_stats}
+            preds = eval_model.apply({**{"params": training_state["params"]}, **bs_dict}, inputs)
             return jax.lax.pmean(self.loss_fn(preds, targets), axis_name="batch")
         for batch in tqdm(self.testloader):
             inputs, targets = self.preprocess_fn(batch)
             inputs, targets = jax.tree_util.tree_map(
                 lambda x: jnp.reshape(x, (self.num_local_devices, -1) + x.shape[1:]), (inputs, targets))
-            loss, metrics = eval_fn(self.training_state.params, inputs, targets)
+            loss, metrics = eval_fn(self.training_state, inputs, targets)
             eval_metrics.append(metrics)
         eval_metrics = jax.tree_util.tree_map(lambda *x: jnp.stack(x).mean(), *eval_metrics)
         logging.info("Evaluation Metrics: %r", eval_metrics)
