@@ -4,7 +4,7 @@ include "./size/medium.gin"     # medium size is used by default unless overridd
 
 NUM_STEPS = 1_000_000   # might be overridden depending on the model/dataset
 DROPOUT = 0.1
-BATCH_NORM = False
+BATCHNORM = False
 
 import train
 from archs import seq_layer
@@ -15,7 +15,7 @@ import losses
 seq_layer.SequenceLayer:
     d_model = %D_MODEL
     dropout = %DROPOUT
-    batch_norm = %BATCH_NORM
+    batchnorm = %BATCHNORM
 
 seq_model.StackedEncoderModel:
     d_model = %D_MODEL
