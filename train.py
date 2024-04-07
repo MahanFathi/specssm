@@ -97,7 +97,7 @@ class Trainer:
         wandb.log({"training/"+key: val for key, val in train_metrics.items()})
     
 
-    @functools.partial(jax.pmap, axis_name='batch', static_broadcasted_argnums=(0,))
+    @functools.partial(jax.pmap, axis_name="data", static_broadcasted_argnums=(0,))
     def train_step(self, key, training_state, inputs, targets):
         key, key_dropout = jax.random.split(key)
         bs_dict = {}
@@ -116,10 +116,10 @@ class Trainer:
             return loss, (mutes, metrics)
         (loss, (mutes, metrics)), grads = jax.value_and_grad(
             loss_fn, has_aux=True)(training_state.params)
-        metrics = jax.lax.pmean(metrics, axis_name='batch') # average metrics across the batch
-        grads = jax.lax.pmean(grads, axis_name='batch')
+        metrics = jax.lax.pmean(metrics, axis_name='data') # average metrics across the batch
+        grads = jax.lax.pmean(grads, axis_name='data')
         if hasattr(training_state, "batch_stats"):
-            new_batch_stats = jax.lax.pmean(mutes["batch_stats"], axis_name='batch')
+            new_batch_stats = jax.lax.pmean(mutes["batch_stats"], axis_name='data')
             training_state = training_state.replace(batch_stats=new_batch_stats)
         training_state = training_state.apply_gradients(grads=grads)
         return training_state, metrics
@@ -130,13 +130,13 @@ class Trainer:
         eval_metrics = []
         eval_model = self.batched_model_definition(training=False)
         bs_dict = {}
-        @functools.partial(jax.pmap, axis_name="batch")
+        @functools.partial(jax.pmap, axis_name="data")
         def eval_fn(training_state, inputs, targets):
             bs_dict = {}
             if hasattr(self.training_state, "batch_stats"):
                 bs_dict = {"batch_stats": self.training_state.batch_stats}
             preds = eval_model.apply({**{"params": training_state.params}, **bs_dict}, inputs)
-            return jax.lax.pmean(self.loss_fn(preds, targets), axis_name="batch")
+            return jax.lax.pmean(self.loss_fn(preds, targets), axis_name="data")
         for batch in tqdm(self.testloader):
             inputs, targets = self.preprocess_fn(batch)
             inputs, targets = jax.tree_util.tree_map(
