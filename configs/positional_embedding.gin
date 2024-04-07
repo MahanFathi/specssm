@@ -1,8 +1,12 @@
 
-from archs.spectral_ssm import ssm
+import archs.s5.ssm
+import archs.spectral_ssm.ssm
 
 seq_layer.SequenceLayer:
     positional_embedding = "rotary"
 
 ssm.STU:
     pure_spec = True
+
+ssm.S5:
+    real_only = True
