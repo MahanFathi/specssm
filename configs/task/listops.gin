@@ -13,6 +13,8 @@ NUM_WARMUP_STEPS = 20_000
 
 DROPOUT = 0.0
 
+S5_OPT_CONFIG = "BfastandCdecay"
+
 # ---------- S5 Specific ---------
 archs.s5.ssm.S5:
     C_init = "lecun_normal"

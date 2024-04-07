@@ -5,6 +5,7 @@ import optimizers
 
 
 LEARNING_RATE = 3e-3
+S5_OPT_CONFIG = "standard"
 
 
 seq_layer.SequenceLayer:
@@ -22,7 +23,7 @@ optimizers.create_s5_optimizer:
     num_warmup_steps = %NUM_WARMUP_STEPS
     learning_rate = %LEARNING_RATE
     ssm_learning_rate = %LEARNING_RATE
-    opt_config = "standard"
+    opt_config = %S5_OPT_CONFIG
 
 
 train.Trainer:
