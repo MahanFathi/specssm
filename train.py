@@ -113,8 +113,8 @@ class Trainer:
         def loss_fn(params):
             preds, mutes = pred_fn(params)
             loss, metrics = self.loss_fn(preds, targets)
-            return loss, mutes, metrics
-        (loss, mutes, metrics), grads = jax.value_and_grad(
+            return loss, (mutes, metrics)
+        (loss, (mutes, metrics)), grads = jax.value_and_grad(
             loss_fn, has_aux=True)(training_state.params)
         metrics = jax.lax.pmean(metrics, axis_name='batch') # average metrics across the batch
         grads = jax.lax.pmean(grads, axis_name='batch')
