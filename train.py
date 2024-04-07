@@ -112,7 +112,7 @@ class Trainer:
             mutable=["intermediates"]+bs_list)
         def loss_fn(params):
             preds, mutes = pred_fn(params)
-            loss, metrics = self.loss_fn(pred_fn(params), targets)
+            loss, metrics = self.loss_fn(preds, targets)
             return loss, mutes, metrics
         (loss, mutes, metrics), grads = jax.value_and_grad(
             loss_fn, has_aux=True)(training_state.params)
