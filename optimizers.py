@@ -7,57 +7,9 @@ import utils
 
 
 @gin.configurable
-class WarmupCosineDecay:
-    """Cosine decay with linear warmup."""
-    def __init__(
-        self,
-        lr: float,
-        start_val: float = gin.REQUIRED,
-        min_lr: float = gin.REQUIRED,
-        num_steps: int = gin.REQUIRED,
-        warmup_steps: int = gin.REQUIRED,
-    ) -> None:
-        """Initialize a cosine decay schedule with warmup.
-
-        Args:
-            start_val: The value to start at.
-            min_lr: The minimum value to decay to.
-            lr: The peak value to reach.
-            num_steps: The total number of steps to decay over.
-            warmup_steps: The number of steps to warmup for.
-        """
-        self.start_val = start_val
-        self.min_lr = min_lr
-        self.lr = lr
-        self.num_steps = num_steps
-        self.warmup_steps = warmup_steps
-
-    def __call__(self, itr) -> jax.Array:
-        """Get learning rate for a given step.
-
-        Args:
-            itr: The current step.
-
-        Returns:
-            The learning rate for the given step.
-        """
-        warmup_val = (self.lr - self.start_val) * (
-            itr / self.warmup_steps
-        ) + self.start_val
-
-        cos_itr = (itr - self.warmup_steps) / (self.num_steps - self.warmup_steps)
-        cos = 1 + jnp.cos(jnp.pi * cos_itr)
-        cos_val = 0.5 * (self.lr - self.min_lr) * cos + self.min_lr
-
-        # Select warmup_val if itr < warmup, else cosine val
-        values = jnp.array([warmup_val, cos_val])
-        index = jnp.sum(jnp.array(self.warmup_steps) < itr)
-
-        return jnp.take(values, index)
-
-
-@gin.configurable
 def create_specssm_optimizer(
+    num_steps: int,
+    num_warmup_steps: int,
     learning_rate: float = 5e-4,
     weight_decay: float = 0.1,
     m_y_learning_rate: float = 5e-5,
@@ -78,8 +30,7 @@ def create_specssm_optimizer(
     """
     optimizers = {
         'default': optax.adamw(
-            learning_rate=WarmupCosineDecay(
-                lr=learning_rate),
+            learning_rate=learning_rate,
             b1=0.9,
             b2=0.999,
             eps=1e-8,
@@ -87,8 +38,7 @@ def create_specssm_optimizer(
             weight_decay=weight_decay,
         ),
         'm_y': optax.adamw(
-            learning_rate=WarmupCosineDecay(
-                lr=m_y_learning_rate),
+            learning_rate=m_y_learning_rate,
             b1=0.9,
             b2=0.999,
             eps=1e-8,
@@ -101,7 +51,26 @@ def create_specssm_optimizer(
         lambda k, _: 'm_y' if k.startswith('m_y') else 'default'
     )
 
-    return optax.multi_transform(optimizers, label_fn)
+    tx = optax.multi_transform(optimizers, label_fn)
+
+    # tx is the base optimizer, we now proceed to add the learning rate schedule
+    schedule = optax.join_schedules(
+        schedules=[
+          optax.linear_schedule(.1, 1., num_warmup_steps),
+          optax.cosine_decay_schedule(1., num_steps - num_warmup_steps)
+        ],
+        boundaries=[
+          num_warmup_steps,
+        ]
+    )
+
+    tx = optax.chain(
+      tx,
+      # optax.scale_by_schedule(schedule),
+      optax.scale_by_learning_rate(learning_rate=schedule, flip_sign=False),
+    )
+
+    return tx
 
 
 @gin.configurable
@@ -228,22 +197,21 @@ def create_s5_optimizer(
             ssm_fn,
         )
 
-        # tx is the base optimizer, we now proceed to add the learning rate schedule
-        schedule = optax.join_schedules(
-            schedules=[
-              optax.linear_schedule(.1, 1., num_warmup_steps),
-              optax.cosine_decay_schedule(1., num_steps - num_warmup_steps)
-            ],
-            boundaries=[
-              num_warmup_steps,
-            ]
-        )
+    # tx is the base optimizer, we now proceed to add the learning rate schedule
+    schedule = optax.join_schedules(
+        schedules=[
+          optax.linear_schedule(.1, 1., num_warmup_steps),
+          optax.cosine_decay_schedule(1., num_steps - num_warmup_steps)
+        ],
+        boundaries=[
+          num_warmup_steps,
+        ]
+    )
 
-        tx = optax.chain(
-          tx,
-          # optax.scale_by_schedule(schedule),
-          optax.scale_by_learning_rate(learning_rate=schedule, flip_sign=False),
-        )
-
+    tx = optax.chain(
+      tx,
+      # optax.scale_by_schedule(schedule),
+      optax.scale_by_learning_rate(learning_rate=schedule, flip_sign=False),
+    )
 
     return tx

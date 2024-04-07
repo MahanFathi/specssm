@@ -3,7 +3,7 @@ from archs.spectral_ssm import ssm
 from archs import seq_layer
 import optimizers
 
-LEARNING_RATE = 5e-4
+LEARNING_RATE = 1e-3
 NUM_WARMUP_STEPS = 20_000
 
 # Spectral SSM specific
@@ -23,16 +23,12 @@ ssm.STU:
     learnable_m_y = %LEARNABLE_M_Y
 
 
-optimizers.WarmupCosineDecay:
-    start_val = 1e-7
-    min_lr = 1e-7
-    num_steps = %NUM_STEPS
-    warmup_steps = %NUM_WARMUP_STEPS
-
 optimizers.create_specssm_optimizer:
+    num_steps = %NUM_STEPS
+    num_warmup_steps = %NUM_WARMUP_STEPS
     learning_rate = %LEARNING_RATE
+    m_y_learning_rate = %LEARNING_RATE
     weight_decay = 0.1
-    m_y_learning_rate = 5e-5
     m_y_weight_decay = 0.0
 
 train.Trainer:
