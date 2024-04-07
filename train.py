@@ -128,9 +128,13 @@ class Trainer:
         del key
         eval_metrics = []
         eval_model = self.batched_model_definition(training=False)
+        bs_dict = {}
+        if hasattr(self.training_state, "batch_stats"):
+            bs_dict = {"batch_stats": self.training_state.batch_stats}
         @functools.partial(jax.pmap, axis_name="batch")
         def eval_fn(params, inputs, targets):
-            return jax.lax.pmean(self.loss_fn(eval_model.apply({"params": params}, inputs), targets), axis_name="batch")
+            preds = eval_model.apply({**{"params": params}, **bs_dict}, inputs)
+            return jax.lax.pmean(self.loss_fn(preds, targets), axis_name="batch")
         for batch in tqdm(self.testloader):
             inputs, targets = self.preprocess_fn(batch)
             inputs, targets = jax.tree_util.tree_map(
