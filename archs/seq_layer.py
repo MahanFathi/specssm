@@ -3,6 +3,8 @@ from jax import numpy as jnp
 from flax import linen as nn
 import gin
 
+from archs.position import rotate_x
+
 
 @gin.configurable
 class SequenceLayer(nn.Module):
@@ -58,12 +60,15 @@ class SequenceLayer(nn.Module):
         )
 
         if self.positional_embedding in ["independent"]:
-            self.pos_emb = nn.Embed(
+            self._pos_emb = nn.Embed(
                 num_embeddings=self.input_len,
                 features=self.d_model,
             )
-        elif self.positional_embedding in ["sinusoidal"]:
-            raise NotImplementedError("Sinusoidal positional embedding not implemented")
+            self.pos_emb = lambda _: self._pos_emb(jnp.arange(self.input_len))
+
+        elif self.positional_embedding in ["rotary"]:
+            self.pos_emb = lambda x: rotate_x(x, max_wavelength=10_000)
+            
 
     def __call__(self, x):
         """
@@ -75,7 +80,7 @@ class SequenceLayer(nn.Module):
         """
         skip = x
         if self.positional_embedding:
-            x += self.pos_emb(jnp.arange(self.input_len))
+            x += self.pos_emb(x)
         if self.prenorm:
             x = self.norm(x)
         x = self.seq(x)

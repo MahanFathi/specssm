@@ -1,5 +1,3 @@
 
-from archs.s5 import ssm
-
 seq_layer.SequenceLayer:
-    positional_embedding: True
+    positional_embedding: "rotary"
