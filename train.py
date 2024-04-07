@@ -53,14 +53,25 @@ class Trainer:
         # p_init = jax.pmap(model.init, axis_name='i')
         # init_rngs = utils.broadcast_to_local_devices(init_rngs)
         # dummy_inputs = utils.broadcast_to_local_devices(dummy_inputs)
-        params = model.init(init_rngs, dummy_inputs)
+        variables = model.init(init_rngs, dummy_inputs)
+        params = variables["params"]
+        batch_stats = variables.get("batch_stats", None)
         fn_is_complex = lambda x: x.dtype in [jnp.complex64, jnp.complex128]
         param_sizes = utils.map_nested_fn(lambda k, param: param.size * (2 if fn_is_complex(param) else 1))(params)
         logging.info(f"[*] Trainable Parameters: {sum(jax.tree_leaves(param_sizes))}")
-        training_sate = train_state.TrainState.create(
-            apply_fn=model.apply,
-            params=params['params'],
-            tx=self.optimizer)
+        if batch_stats is not None:
+            class TrainState(train_state.TrainState):
+                batch_stats: Any
+            training_sate = TrainState.create(
+                apply_fn=model.apply,
+                params=params,
+                batch_stats=batch_stats,
+                tx=self.optimizer)
+        else:
+            training_sate = train_state.TrainState.create(
+                apply_fn=model.apply,
+                params=params,
+                tx=self.optimizer)
         return jax_utils.replicate(training_sate)
 
 
@@ -89,16 +100,26 @@ class Trainer:
     @functools.partial(jax.pmap, axis_name='batch', static_broadcasted_argnums=(0,))
     def train_step(self, key, training_state, inputs, targets):
         key, key_dropout = jax.random.split(key)
+        bs_dict = {}
+        bs_list = []
+        if hasattr(training_state, "batch_stats"):
+            bs_dict = {"batch_stats": training_state.batch_stats}
+            bs_list = ["batch_stats"]
         pred_fn = lambda params: training_state.apply_fn(
-            {"params": params}, 
+            {**{"params": params}, **bs_dict}, 
             inputs, 
             rngs={"dropout": key_dropout}, 
-            mutable=["intermediates"])[0]
-        (loss, metrics), grads = jax.value_and_grad(
-            lambda params: self.loss_fn(pred_fn(params), targets), 
-            has_aux=True)(training_state.params)
+            mutable=["intermediates"]+bs_list)
+        def loss_fn(params):
+            preds, mutes = pred_fn(params)
+            loss, metrics = self.loss_fn(pred_fn(params), targets)
+            return loss, mutes, metrics
+        (loss, mutes, metrics), grads = jax.value_and_grad(
+            loss_fn, has_aux=True)(training_state.params)
         metrics = jax.lax.pmean(metrics, axis_name='batch') # average metrics across the batch
         grads = jax.lax.pmean(grads, axis_name='batch')
+        if hasattr(training_state, "batch_stats"):
+            training_state = training_state.replace(batch_stats=mutes["batch_stats"])
         training_state = training_state.apply_gradients(grads=grads)
         return training_state, metrics
 
@@ -147,8 +168,8 @@ class Trainer:
         # call vmap to parallelize across a batch of input sequences
         self.batched_model_definition = nn.vmap(
             self.model_definition, in_axes=(0,), out_axes=0,
-            variable_axes={"params": None, "dropout": None, 'batch_stats': None, "cache": 0, "prime": None},
-            split_rngs={"params": False, "dropout": True}, axis_name='batch',
+            variable_axes={"params": None, "dropout": None, "batch_stats": None, "cache": 0, "prime": None},
+            split_rngs={"params": False, "dropout": True}, axis_name="batch",
         )
 
         # PRNG key initialization

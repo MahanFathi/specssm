@@ -5,15 +5,16 @@ import archs.s5.ssm
 from archs import seq_layer
 from archs import seq_model
 
-TASK_NAME = 'listops'
-BATCH_SIZE = 64
+TASK_NAME = 'listops'               # dummy
+BATCH_SIZE = 64                     # overrides base.gin
 
-NUM_STEPS = 10_000_000
+NUM_STEPS = 10_000_000              # overrides base.gin
 NUM_WARMUP_STEPS = 20_000
 
-DROPOUT = 0.0
+DROPOUT = 0.0                       # overrides base.gin
+BATCH_NORM = True                   # overrides base.gin
 
-S5_OPT_CONFIG = "BfastandCdecay"
+S5_OPT_CONFIG = "BfastandCdecay"    # overrides ssm/s5.gin
 
 # ---------- S5 Specific ---------
 archs.s5.ssm.S5:

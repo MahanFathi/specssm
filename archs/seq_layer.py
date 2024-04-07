@@ -30,8 +30,8 @@ class SequenceLayer(nn.Module):
     activation: str = "half_glu1"
     prenorm: bool = False
     positional_embedding: str | None = None
-    # batchnorm: bool = False
-    # bn_momentum: float = 0.90
+    batchnorm: bool = False
+    bn_momentum: float = 0.90
 
     def setup(self):
         """Initializes the ssm, batch/layer norm and dropout
@@ -44,15 +44,12 @@ class SequenceLayer(nn.Module):
         elif self.activation in ["half_glu1", "half_glu2"]:
             self.out2 = nn.Dense(self.d_model)
 
-        # TODO(mahanfathi): support batchnorm in training_state
-        # if self.batchnorm:
-        #     self.norm = nn.BatchNorm(use_running_average=not self.training,
-        #                              momentum=self.bn_momentum, axis_name='batch')
-        # else:
-        #     self.norm = nn.LayerNorm()
+        if self.batchnorm:
+            self.norm = nn.BatchNorm(use_running_average=not self.training,
+                                     momentum=self.bn_momentum, axis_name='batch')
+        else:
+            self.norm = nn.LayerNorm()
         
-        self.norm = nn.LayerNorm()
-
         self.drop = nn.Dropout(
             self.dropout,
             broadcast_dims=[0],
