@@ -135,7 +135,7 @@ class Trainer:
             bs_dict = {}
             if hasattr(self.training_state, "batch_stats"):
                 bs_dict = {"batch_stats": self.training_state.batch_stats}
-            preds = eval_model.apply({**{"params": training_state["params"]}, **bs_dict}, inputs)
+            preds = eval_model.apply({**{"params": training_state.params}, **bs_dict}, inputs)
             return jax.lax.pmean(self.loss_fn(preds, targets), axis_name="batch")
         for batch in tqdm(self.testloader):
             inputs, targets = self.preprocess_fn(batch)
