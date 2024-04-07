@@ -163,8 +163,10 @@ cython_debug/
 .vscode/
 
 # datasets
-cache_dir/
-raw_datasets/
+cache_dir
+raw_datasets
 
 # logging
-wandb/
+logs
+wandb
+log.txt
