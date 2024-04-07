@@ -1,5 +1,7 @@
 """Spectral temporal unit (STU) block."""
 
+import functools
+
 import jax
 import jax.numpy as jnp
 
@@ -12,10 +14,12 @@ import archs.spectral_ssm.utils as stu_utils
 PRNGKey = jax.Array
 Array = jax.Array
 
+@functools.partial(jax.jit, static_argnums=(3, ))
 def apply_stu(
     params: tuple[Array, Array, Array],
     inputs: Array,
     eigh: tuple[Array, Array],
+    pure_spec: bool = False,
 ) -> Array:
     """Apply STU.
 
@@ -24,16 +28,20 @@ def apply_stu(
         [d_in * k, d_out] and [d_in * k, d_out]
         inputs: Input matrix of shape [l, d_in].
         eigh: A tuple of eigenvalues [k] and circulant eigenvecs [k, l, l].
+        pure_spec: If True, only spectral component is used.
 
     Returns:
         A sequence of y_ts of shape [l, d_out].
     """
     m_y, m_u, m_phi = params
 
-    x_tilde = stu_utils.compute_x_tilde(inputs, eigh)
+    x_tilde = stu_utils.compute_x_tilde(inputs, eigh, not pure_spec)
 
     # Compute deltas from the spectral filters, which are of shape [l, d_out].
     delta_phi = x_tilde @ m_phi
+
+    if pure_spec:
+        return delta_phi
 
     # Compute deltas from AR on x part
     delta_ar_u = stu_utils.compute_ar_x_preds(m_u, inputs)
@@ -52,6 +60,7 @@ class STU(nn.Module):
         auto_reg_k_u: Auto-regressive depth on the input sequence,
         auto_reg_k_y: Auto-regressive depth on the output sequence,
         learnable_m_y: m_y matrix learnable,
+        pure_spec: If True, only spectral component is used.
     """
 
     input_len: int
@@ -60,20 +69,24 @@ class STU(nn.Module):
     auto_reg_k_u: int = gin.REQUIRED
     auto_reg_k_y: int = gin.REQUIRED
     learnable_m_y: bool = gin.REQUIRED
+    pure_spec: bool = False
 
     def setup(self):
         """Initialize STU layer."""
 
         self.eigh = stu_utils.get_top_hankel_eigh(self.input_len, self.num_eigh)
-
-        if self.learnable_m_y:
-            self.m_y = self.param('m_y', nn.initializers.zeros_init(), (self.d_model, self.auto_reg_k_y, self.d_model))
-        else:
-            self.m_y = jnp.zeros([self.d_model, self.auto_reg_k_y, self.d_model])
-
-        m_x_var = 1.0 / (float(self.d_model) ** 0.5)
-        self.m_u = m_x_var * self.param('m_u', nn.initializers.truncated_normal(), (self.d_model, self.d_model, self.auto_reg_k_u))
         self.m_phi = self.param('m_phi', nn.initializers.zeros_init(), (self.d_model * self.num_eigh, self.d_model))
+        if self.pure_spec:
+            self.m_y = None
+            self.m_u = None
+        else:
+            if self.learnable_m_y:
+                self.m_y = self.param('m_y', nn.initializers.zeros_init(), (self.d_model, self.auto_reg_k_y, self.d_model))
+            else:
+                self.m_y = jnp.zeros([self.d_model, self.auto_reg_k_y, self.d_model])
+
+            m_x_var = 1.0 / (float(self.d_model) ** 0.5)
+            self.m_u = m_x_var * self.param('m_u', nn.initializers.truncated_normal(), (self.d_model, self.d_model, self.auto_reg_k_u))
 
     def __call__(
         self,
@@ -93,7 +106,7 @@ class STU(nn.Module):
 
         params = (self.m_y, self.m_u, self.m_phi)
 
-        return apply_stu(params, inputs, self.eigh)
+        return apply_stu(params, inputs, self.eigh, self.pure_spec)
 
 
 # deprecated

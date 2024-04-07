@@ -146,10 +146,11 @@ def compute_ar_x_preds(
     return jnp.sum(o * m, axis=0)
 
 
-@jax.jit
+@functools.partial(jax.jit, static_argnums=(2,))
 def compute_x_tilde(
     inputs: Array,
     eigh: tuple[Array, Array],
+    shift_for_ar: bool = True,
 ) -> Array:
     """Project input sequence into spectral basis.
 
@@ -167,6 +168,10 @@ def compute_x_tilde(
 
     # Broadcast an element-wise multiple along the k-sized axis.
     x_tilde *= jnp.expand_dims(eig_vals, axis=(0, 2)) ** 0.25
+    x_tilde = x_tilde.reshape((l, -1))
 
-    # This shift is introduced as the rest is handled by the AR part.
-    return shift(shift(x_tilde.reshape((l, -1))))
+    if shift_for_ar:
+        # This shift is introduced as the rest is handled by the AR part.
+        return shift(shift(x_tilde))
+    else:
+        return x_tilde
