@@ -4,9 +4,7 @@ from archs import seq_layer
 import optimizers
 
 
-NUM_STEPS = 5_000_000
-NUM_WARMUP_STEPS = 40_000
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 3e-3
 
 
 seq_layer.SequenceLayer:

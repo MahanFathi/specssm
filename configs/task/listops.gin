@@ -9,7 +9,9 @@ TASK_NAME = 'listops'
 BATCH_SIZE = 64
 
 NUM_STEPS = 10_000_000
-NUM_WARMUP_STEPS = 50_000
+NUM_WARMUP_STEPS = 20_000
+
+DROPOUT = 0.0
 
 # ---------- S5 Specific ---------
 archs.s5.ssm.S5:

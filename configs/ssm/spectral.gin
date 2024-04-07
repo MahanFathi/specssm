@@ -3,8 +3,7 @@ from archs.spectral_ssm import ssm
 from archs import seq_layer
 import optimizers
 
-LEARNING_RATE = 1e-3
-NUM_WARMUP_STEPS = 20_000
+LEARNING_RATE = 3e-3
 
 # Spectral SSM specific
 NUM_EIGH = 24
