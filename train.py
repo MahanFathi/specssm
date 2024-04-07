@@ -91,6 +91,7 @@ class Trainer:
                 lambda x: jnp.reshape(x, (self.num_local_devices, -1) + x.shape[1:]), (inputs, targets))
             self.training_state, metrics = self.train_step(key_step, self.training_state, inputs, targets)
             train_metrics.append(metrics)
+
         train_metrics = jax.tree_util.tree_map(lambda *x: jnp.stack(x).mean(), *train_metrics)
         # TODO(mahanfathi): log metrics properly
         logging.info("Training Metrics: %r", train_metrics)
@@ -119,8 +120,7 @@ class Trainer:
         metrics = jax.lax.pmean(metrics, axis_name="batch") # average metrics across the batch
         grads = jax.lax.pmean(grads, axis_name="batch")
         if hasattr(training_state, "batch_stats"):
-            # new_batch_stats = jax.lax.pmean(mutes["batch_stats"], axis_name='data')
-            new_batch_stats = mutes["batch_stats"]
+            new_batch_stats = jax.lax.pmean(mutes["batch_stats"], axis_name='batch')
             training_state = training_state.replace(batch_stats=new_batch_stats)
         training_state = training_state.apply_gradients(grads=grads)
         return training_state, metrics
@@ -135,7 +135,7 @@ class Trainer:
         def eval_fn(training_state, inputs, targets):
             bs_dict = {}
             if hasattr(self.training_state, "batch_stats"):
-                bs_dict = {"batch_stats": self.training_state.batch_stats}
+                bs_dict = {"batch_stats": training_state.batch_stats}
             preds = eval_model.apply({**{"params": training_state.params}, **bs_dict}, inputs)
             return jax.lax.pmean(self.loss_fn(preds, targets), axis_name="batch")
         for batch in tqdm(self.testloader):
