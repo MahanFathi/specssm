@@ -2,7 +2,7 @@
 from archs.spectral_ssm import ssm
 
 seq_layer.SequenceLayer:
-    positional_embedding: "rotary"
+    positional_embedding = "rotary"
 
 ssm.STU:
     pure_spec = True
