@@ -120,8 +120,9 @@ class Trainer:
         grads = jax.lax.pmean(grads, axis_name='data')
         if hasattr(training_state, "batch_stats"):
             new_batch_stats = jax.lax.pmean(mutes["batch_stats"], axis_name='data')
-            training_state = training_state.replace(batch_stats=new_batch_stats)
-        training_state = training_state.apply_gradients(grads=grads)
+            training_state = training_state.apply_gradients(grads=grads, batch_stats=new_batch_stats)
+        else:
+            training_state = training_state.apply_gradients(grads=grads)
         return training_state, metrics
 
 
