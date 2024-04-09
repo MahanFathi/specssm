@@ -78,7 +78,7 @@ def create_s5_optimizer(
     num_steps: int,
     num_warmup_steps: int,
     learning_rate: optax.ScalarOrSchedule = 5e-4,
-    weight_decay: float = 0.1,
+    weight_decay: float = 0.04,
     ssm_learning_rate: optax.ScalarOrSchedule = 5e-4,
     opt_config = "standard",
     dt_global = False,
