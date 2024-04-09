@@ -9,6 +9,7 @@ BATCHNORM = False
 import train
 from archs import seq_layer
 from archs import seq_model
+import optimizer
 import dataloader
 import losses
 
@@ -31,3 +32,4 @@ train.Trainer:
     model_definition = @seq_model.ClassificationModel
     create_preprocess_fn = @dataloader.create_lra_preprocess
     create_loss_fn = @losses.create_classification_loss
+    create_platuea_fn = @optimizer.create_plateau_optimizer

@@ -6,8 +6,10 @@ from absl import logging
 import jax
 from jax import numpy as jnp
 from flax.training import train_state
-from flax import linen as nn, jax_utils
+from flax import linen as nn, jax_utils, struct
+import optax
 import gin
+import optax.contrib.reduce_on_plateau_test
 from tqdm import tqdm
 import wandb
 
@@ -27,6 +29,7 @@ class Trainer:
             create_dataset_fn: dataloader.CustomLoaderFn = gin.REQUIRED, 
             create_preprocess_fn: Any = gin.REQUIRED,
             create_optimizer_fn: Any = gin.REQUIRED, 
+            create_platuea_fn: Any | None = gin.REQUIRED, 
             create_loss_fn: Any = gin.REQUIRED,
             use_wandb: bool = True,
     ):
@@ -36,6 +39,7 @@ class Trainer:
         self.create_dataset_fn = create_dataset_fn
         self.create_preprocess_fn = create_preprocess_fn
         self.create_optimizer_fn = create_optimizer_fn
+        self.create_platuea_fn = create_platuea_fn
         self.create_loss_fn = create_loss_fn
         
         config_dict = gin.config_str().split('\n')
@@ -60,18 +64,20 @@ class Trainer:
         param_sizes = utils.map_nested_fn(lambda k, param: param.size * (2 if fn_is_complex(param) else 1))(params)
         logging.info(f"[*] Trainable Parameters: {sum(jax.tree_leaves(param_sizes))}")
         if batch_stats is not None:
-            class TrainState(train_state.TrainState):
+            class TrainStateWithBatchStats(utils.TrainStateX):
                 batch_stats: Any
-            training_sate = TrainState.create(
+            training_sate = TrainStateWithBatchStats.create(
                 apply_fn=model.apply,
                 params=params,
                 batch_stats=batch_stats,
-                tx=self.optimizer)
+                tx=self.optimizer,
+                plateau_tx=self.plateau)
         else:
             training_sate = train_state.TrainState.create(
                 apply_fn=model.apply,
                 params=params,
-                tx=self.optimizer)
+                tx=self.optimizer,
+                plateau_tx=self.plateau)
         return jax_utils.replicate(training_sate)
 
 
@@ -126,7 +132,7 @@ class Trainer:
         return training_state, metrics
 
 
-    def evaluate_epoch(self, key):
+    def evaluate_epoch(self, key, data_loader, scope="eval"):
         del key
         eval_metrics = []
         eval_model = self.batched_model_definition(training=False)
@@ -138,7 +144,7 @@ class Trainer:
                 bs_dict = {"batch_stats": training_state.batch_stats}
             preds = eval_model.apply({**{"params": training_state.params}, **bs_dict}, inputs)
             return jax.lax.pmean(self.loss_fn(preds, targets), axis_name="batch")
-        for batch in tqdm(self.testloader):
+        for batch in tqdm(data_loader):
             inputs, targets = self.preprocess_fn(batch)
             inputs, targets = jax.tree_util.tree_map(
                 lambda x: jnp.reshape(x, (self.num_local_devices, -1) + x.shape[1:]), (inputs, targets))
@@ -146,7 +152,13 @@ class Trainer:
             eval_metrics.append(metrics)
         eval_metrics = jax.tree_util.tree_map(lambda *x: jnp.stack(x).mean(), *eval_metrics)
         logging.info("Evaluation Metrics: %r", eval_metrics)
-        wandb.log({"eval/"+key: val for key, val in eval_metrics.items()})
+        wandb.log({f"{scope}/{key}": val for key, val in eval_metrics.items()})
+        return eval_metrics
+
+
+    @functools.partial(jax.pmap, axis_name="batch", static_broadcasted_argnums=(0,), in_axes=(0, None))
+    def handle_plateau(self, training_state, metrics):
+        return training_state.monitor_plateau(metrics)
 
 
     def train(self):
@@ -169,6 +181,9 @@ class Trainer:
         # create optimizer
         self.optimizer = self.create_optimizer_fn()
 
+        # create lr scaler at val plateau
+        self.plateau = self.create_platuea_fn() if self.create_platuea_fn is not None else None
+
         # update model definition
         self.model_definition = functools.partial(self.model_definition, d_output=n_classes, input_len=input_len)
 
@@ -190,10 +205,12 @@ class Trainer:
         self.training_state = None
         for epoch_num in range(num_epochs):
             key = jax.random.fold_in(key, epoch_num)
-            key, key_train, key_eval = jax.random.split(key, 3)
+            key_train, key_val, key_test = jax.random.split(key, 3)
             # train for one epoch
             logging.info("Training epoch %d", epoch_num)
             self.train_epoch(key_train)
             # evaluate the model
             logging.info("Evaluating epoch %d", epoch_num)
-            self.evaluate_epoch(key_eval)
+            val_metrics = self.evaluate_epoch(key_val, self.valloader, scope="val")
+            self.training_state = self.handle_plateau(self.training_state, val_metrics["loss"])
+            _ = self.evaluate_epoch(key_test, self.testloader, scope="test")

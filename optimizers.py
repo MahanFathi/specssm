@@ -215,3 +215,20 @@ def create_s5_optimizer(
     )
 
     return tx
+
+
+@gin.configurable
+def create_plateau_optimizer(
+    patience=5,
+    cooldown=0,
+    factor=0.5,
+    rtol=0.,
+    accumulation_size=1
+):
+    return optax.contrib.reduce_on_plateau(
+        patience=patience,
+        cooldown=cooldown,
+        factor=factor,
+        rtol=rtol,
+        accumulation_size=accumulation_size
+    )
