@@ -222,7 +222,7 @@ def create_plateau_optimizer(
     patience=5,
     cooldown=0,
     factor=0.5,
-    rtol=0.,
+    rtol=1e-4,
     accumulation_size=1
 ):
     return optax.contrib.reduce_on_plateau(

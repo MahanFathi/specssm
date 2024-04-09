@@ -7,9 +7,7 @@ import jax
 from jax import numpy as jnp
 from flax.training import train_state
 from flax import linen as nn, jax_utils, struct
-import optax
 import gin
-import optax.contrib.reduce_on_plateau_test
 from tqdm import tqdm
 import wandb
 
@@ -156,9 +154,9 @@ class Trainer:
         return eval_metrics
 
 
-    @functools.partial(jax.pmap, axis_name="batch", static_broadcasted_argnums=(0,), in_axes=(0, None))
-    def handle_plateau(self, training_state, metrics):
-        return training_state.monitor_plateau(metrics)
+    @functools.partial(jax.pmap, axis_name="batch", static_broadcasted_argnums=(0,), in_axes=(None, 0, None))
+    def handle_plateau(self, training_state, metric):
+        return training_state.monitor_plateau(metric=metric)
 
 
     def train(self):
