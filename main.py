@@ -2,7 +2,6 @@
 from typing import Sequence
 from absl import app, flags, logging
 
-import jax
 import gin
 
 from train import Trainer
@@ -36,8 +35,6 @@ def main(argv: Sequence[str]) -> None:
         raise app.UsageError("Too many command-line arguments.")
     
     parse_gin_configuration()
-
-    # minimal preparation for argument passing goes here
 
     Trainer().train()
 
