@@ -8,8 +8,8 @@ from archs import seq_model
 TASK_NAME = 'listops'               # dummy
 BATCH_SIZE = 64                     # overrides base.gin
 
-NUM_STEPS = 10_000_000              # overrides base.gin
-NUM_WARMUP_STEPS = 20_000
+NUM_STEPS = 4_000_000              # overrides base.gin
+NUM_WARMUP_STEPS = 30_000
 
 DROPOUT = 0.0                       # overrides base.gin
 BATCHNORM = True                    # overrides base.gin

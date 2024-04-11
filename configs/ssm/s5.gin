@@ -5,6 +5,7 @@ import optimizers
 
 
 LEARNING_RATE = 3e-3
+SSM_LEARNING_RATE = 1e-3
 S5_OPT_CONFIG = "standard"
 
 
@@ -22,8 +23,9 @@ optimizers.create_s5_optimizer:
     num_steps = %NUM_STEPS
     num_warmup_steps = %NUM_WARMUP_STEPS
     learning_rate = %LEARNING_RATE
-    ssm_learning_rate = %LEARNING_RATE
+    ssm_learning_rate = %SSM_LEARNING_RATE
     opt_config = %S5_OPT_CONFIG
+    weight_decay = 0.04
 
 
 train.Trainer:
