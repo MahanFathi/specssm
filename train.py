@@ -189,7 +189,7 @@ class Trainer:
         self.batched_model_definition = nn.vmap(
             self.model_definition, in_axes=(0,), out_axes=0,
             variable_axes={"params": None, "dropout": None, "batch_stats": None, "cache": 0, "prime": None},
-            split_rngs={"params": False, "dropout": True}, axis_name="batch",
+            split_rngs={"params": False, "dropout": True}, axis_name="minibatch",
         )
 
         # PRNG key initialization
