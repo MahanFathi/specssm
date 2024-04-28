@@ -14,3 +14,4 @@ torchaudio
 torchtext
 torchvision
 tqdm
+wandb
