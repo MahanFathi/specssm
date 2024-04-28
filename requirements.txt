@@ -1,0 +1,16 @@
+absl_py
+chex
+datasets
+einops
+flax
+gin
+gin_config
+jax
+numpy
+optax
+Pillow
+torch
+torchaudio
+torchtext
+torchvision
+tqdm
