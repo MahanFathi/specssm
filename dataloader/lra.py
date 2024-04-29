@@ -7,8 +7,9 @@ from pathlib import Path
 import torch
 from torch import nn
 import torch.nn.functional as F
-import torchtext
 import torchvision
+from torchtext import vocab as torchtext_vocab
+from torchtext import data as torchtext_data
 from einops.layers.torch import Rearrange, Reduce
 from PIL import Image  # Only used for Pathfinder
 from datasets import DatasetDict, Value, load_dataset
@@ -101,7 +102,7 @@ class IMDB(SequenceDataset):
         dataset = load_dataset(self._name_, cache_dir=self.data_dir)
         dataset = DatasetDict(train=dataset["train"], test=dataset["test"])
         if self.level == "word":
-            tokenizer = torchtext.data.utils.get_tokenizer(
+            tokenizer = torchtext_data.utils.get_tokenizer(
                 "spacy", language="en_core_web_sm"
             )
         else:  # self.level == 'char'
@@ -116,7 +117,7 @@ class IMDB(SequenceDataset):
             load_from_cache_file=False,
             num_proc=max(self.n_workers, 1),
         )
-        vocab = torchtext.vocab.build_vocab_from_iterator(
+        vocab = torchtext_vocab.build_vocab_from_iterator(
             dataset["train"]["tokens"],
             min_freq=self.min_freq,
             specials=(
@@ -170,44 +171,6 @@ class IMDB(SequenceDataset):
     @property
     def _cache_dir_name(self):
         return f"l_max-{self.l_max}-level-{self.level}-min_freq-{self.min_freq}-append_bos-{self.append_bos}-append_eos-{self.append_eos}"
-
-class TabularDataset(torch.utils.data.Dataset):
-    def __init__(
-        self,
-        path,
-        format,
-        col_idx=None,
-        skip_header=False,
-        csv_reader_params=None,
-    ):
-        """
-        col_idx: the indices of the columns.
-        """
-        if csv_reader_params is None:
-            csv_reader_params = {}
-        format = format.lower()
-        assert format in ["tsv", "csv"]
-        with io.open(os.path.expanduser(path), encoding="utf8") as f:
-            if format == "csv":
-                reader = torchtext.utils.unicode_csv_reader(f, **csv_reader_params)
-            elif format == "tsv":
-                reader = torchtext.utils.unicode_csv_reader(
-                    f, delimiter="\t", **csv_reader_params
-                )
-            else:
-                reader = f
-            if skip_header:
-                next(reader)
-            self._data = [
-                line if col_idx is None else [line[c] for c in col_idx]
-                for line in reader
-            ]
-
-    def __len__(self):
-        return len(self._data)
-
-    def __getitem__(self, idx):
-        return self._data[idx]
 
 
 # LRA tokenizer renames ']' to 'X' and delete parentheses as their tokenizer removes
@@ -316,7 +279,7 @@ class ListOps(SequenceDataset):
             load_from_cache_file=False,
             num_proc=max(self.n_workers, 1),
         )
-        vocab = torchtext.vocab.build_vocab_from_iterator(
+        vocab = torchtext_vocab.build_vocab_from_iterator(
             dataset["train"]["tokens"],
             specials=(
                 ["<pad>", "<unk>"]
@@ -679,7 +642,7 @@ class AAN(SequenceDataset):
             load_from_cache_file=False,
             num_proc=max(self.n_workers, 1),
         )
-        vocab = torchtext.vocab.build_vocab_from_iterator(
+        vocab = torchtext_vocab.build_vocab_from_iterator(
             dataset["train"]["tokens1"] + dataset["train"]["tokens2"],
             specials=(
                 ["<pad>", "<unk>"]
