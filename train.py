@@ -50,7 +50,7 @@ class Trainer:
         if use_wandb:
             wandb.init(project="LRA SSM", job_type='model_training', config=config_dict, dir=wandb_dir)
         else:
-            wandb.init(mode='offline', config=config_dict, dir='wandb_offline', dir=wandb_dir)
+            wandb.init(mode='offline', config=config_dict, dir=wandb_dir)
 
 
     def create_training_state(self, key, dummy_inputs):
