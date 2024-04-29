@@ -66,7 +66,7 @@ source ~/.virtualenvs/jax/bin/activate
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 # Set the base dir for the log files
-LOG_BASE="./logs"
+LOG_BASE="$SCRATCH/logs"
 
 # Define the full path for the output and error files
 OUTPUT_FILE="${LOG_BASE}/${TIMESTAMP}.txt"
