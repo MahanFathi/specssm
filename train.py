@@ -1,5 +1,6 @@
 """Full training pipeline using data parallelism."""
 
+import os
 import functools
 from typing import Any
 from absl import logging
@@ -13,6 +14,9 @@ import wandb
 
 import dataloader
 import utils
+
+
+SCRATCH = os.getenv("SCRATCH", "~/scratch")
 
 
 @gin.configurable
@@ -42,10 +46,11 @@ class Trainer:
         
         config_dict = gin.config_str().split('\n')
         config_dict = {line.split(' ')[0]: line.split(' ')[-1] for line in config_dict if line}
+        wandb_dir = os.path.join(SCRATCH, 'wandb')
         if use_wandb:
-            wandb.init(project="LRA SSM", job_type='model_training', config=config_dict)
+            wandb.init(project="LRA SSM", job_type='model_training', config=config_dict, dir=wandb_dir)
         else:
-            wandb.init(mode='offline', config=config_dict)
+            wandb.init(mode='offline', config=config_dict, dir='wandb_offline', dir=wandb_dir)
 
 
     def create_training_state(self, key, dummy_inputs):
