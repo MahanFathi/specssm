@@ -8,6 +8,9 @@ LEARNING_RATE = 3e-3
 SSM_LEARNING_RATE = 1e-3
 S5_OPT_CONFIG = "standard"
 
+SSM_SIZE_BASE = 16
+NUM_BLOCKS = 8
+
 
 seq_layer.SequenceLayer:
     ssm = @ssm.S5
@@ -15,8 +18,8 @@ seq_layer.SequenceLayer:
 
 ssm.S5:
     d_model = %D_MODEL
-    ssm_size_base = 16
-    num_blocks = 8
+    ssm_size_base = %SSM_SIZE_BASE
+    num_blocks = %NUM_BLOCKS
 
 
 optimizers.create_s5_optimizer:

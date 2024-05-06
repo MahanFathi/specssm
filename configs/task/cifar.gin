@@ -5,6 +5,10 @@ import archs.s5.ssm
 from archs import seq_layer
 from archs import seq_model
 
+D_MODEL = 512                       # overrides ssm/size/{}.gin
+SSM_SIZE_BASE = 384                 # overrides ssm/s5.gin
+NUM_BLOCKS = 3                      # overrides ssm/s5.gin
+
 TASK_NAME = 'cifar'                 # dummy
 BATCH_SIZE = 64                     # overrides base.gin
 
