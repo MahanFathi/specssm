@@ -69,7 +69,7 @@ class STU(nn.Module):
     auto_reg_k_u: int = gin.REQUIRED
     auto_reg_k_y: int = gin.REQUIRED
     learnable_m_y: bool = gin.REQUIRED
-    pure_spec: bool = False
+    pure_spec: bool = True
 
     def setup(self):
         """Initialize STU layer."""
