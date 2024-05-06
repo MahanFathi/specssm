@@ -77,7 +77,13 @@ class SequenceLayer(nn.Module):
         """
         skip = x
         if self.positional_embedding:
-            x += self.pos_emb(x)
+            if self.positional_embedding in ["independent"]:
+                x += self.pos_emb(x)
+            elif self.positional_embedding in ["rotary"]:
+                x = self.pos_emb(x)
+            else:
+                raise NotImplementedError(
+                    "Positional embedding: {} not implemented".format(self.positional_embedding))
         if self.prenorm:
             x = self.norm(x)
         x = self.seq(x)
