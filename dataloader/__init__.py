@@ -110,6 +110,7 @@ def make_data_loader(dset,
 									   drop_last=drop_last, generator=rng)
 
 
+@gin.configurable
 def create_lra_imdb_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CACHE_DIR_ROOT,
 										   bsz: int = 50,
 										   seed: int = 42) -> ReturnType:
@@ -172,6 +173,7 @@ def create_lra_listops_classification_dataset(cache_dir: Union[str, Path] = DEFA
 	return trn_loader, val_loader, tst_loader, aux_loaders, N_CLASSES, SEQ_LENGTH, IN_DIM, TRAIN_SIZE
 
 
+@gin.configurable
 def create_lra_path32_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CACHE_DIR_ROOT,
 											 bsz: int = 50,
 											 seed: int = 42) -> ReturnType:
@@ -202,6 +204,7 @@ def create_lra_path32_classification_dataset(cache_dir: Union[str, Path] = DEFAU
 	return trn_loader, val_loader, tst_loader, aux_loaders, N_CLASSES, SEQ_LENGTH, IN_DIM, TRAIN_SIZE
 
 
+@gin.configurable
 def create_lra_pathx_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CACHE_DIR_ROOT,
 											bsz: int = 50,
 											seed: int = 42) -> ReturnType:
@@ -232,6 +235,7 @@ def create_lra_pathx_classification_dataset(cache_dir: Union[str, Path] = DEFAUL
 	return trn_loader, val_loader, tst_loader, aux_loaders, N_CLASSES, SEQ_LENGTH, IN_DIM, TRAIN_SIZE
 
 
+@gin.configurable
 def create_lra_image_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CACHE_DIR_ROOT,
 											seed: int = 42,
 											bsz: int=128) -> ReturnType:
@@ -266,6 +270,7 @@ def create_lra_image_classification_dataset(cache_dir: Union[str, Path] = DEFAUL
 	return trn_loader, val_loader, tst_loader, aux_loaders, N_CLASSES, SEQ_LENGTH, IN_DIM, TRAIN_SIZE
 
 
+@gin.configurable
 def create_lra_aan_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CACHE_DIR_ROOT,
 										  bsz: int = 50,
 										  seed: int = 42, ) -> ReturnType:
@@ -346,6 +351,7 @@ def create_lra_aan_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_
 # 	return trn_loader, val_loader, tst_loader, aux_loaders, N_CLASSES, SEQ_LENGTH, IN_DIM, TRAIN_SIZE
 
 
+@gin.configurable
 def create_cifar_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CACHE_DIR_ROOT,
 										seed: int = 42,
 										bsz: int=128) -> ReturnType:
@@ -380,6 +386,7 @@ def create_cifar_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CA
 	return trn_loader, val_loader, tst_loader, aux_loaders, N_CLASSES, SEQ_LENGTH, IN_DIM, TRAIN_SIZE
 
 
+@gin.configurable
 def create_mnist_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CACHE_DIR_ROOT,
 																				seed: int = 42,
 																				bsz: int=128) -> ReturnType:
@@ -412,6 +419,7 @@ def create_mnist_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CA
 	return trn_loader, val_loader, tst_loader, aux_loaders, N_CLASSES, SEQ_LENGTH, IN_DIM, TRAIN_SIZE
 
 
+@gin.configurable
 def create_pmnist_classification_dataset(cache_dir: Union[str, Path] = DEFAULT_CACHE_DIR_ROOT,
 																				seed: int = 42,
 																				bsz: int=128) -> ReturnType:
