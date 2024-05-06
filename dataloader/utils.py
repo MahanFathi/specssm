@@ -26,7 +26,7 @@ def deprecated(cls_or_func):
 
 # Default data path is environment variable or hippo/data
 default_data_path = Path(__file__).parent.parent.parent.absolute()
-default_data_path = default_data_path / "raw_data"
+default_data_path = default_data_path / "raw_datasets"
 
 
 class DefaultCollateMixin:
