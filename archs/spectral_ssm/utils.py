@@ -156,7 +156,7 @@ def compute_x_tilde(
 
     Args:
         inputs: A single input sequence of shape [l, d_in].
-        eigh: A tuple of eigenvalues [k] and circulant eigenvecs [k, l, l].
+        eigh: A tuple of eigenvalues [k] and circulant eigenvecs [l, k].
 
     Returns:
         x_tilde: An output of shape [l, k * d_in].

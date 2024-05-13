@@ -27,7 +27,7 @@ def apply_stu(
         params: A tuple of parameters of shapes [d_out, d_out], [d_in, d_out, k_u],
         [d_in * k, d_out] and [d_in * k, d_out]
         inputs: Input matrix of shape [l, d_in].
-        eigh: A tuple of eigenvalues [k] and circulant eigenvecs [k, l, l].
+        eigh: A tuple of eigenvalues [k] and circulant eigenvecs [k, l].
         pure_spec: If True, only spectral component is used.
 
     Returns:
